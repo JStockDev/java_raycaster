@@ -11,6 +11,8 @@ dependencies {
     implementation(libs.guava)
 
     implementation("io.github.libsdl4j:libsdl4j:2.28.4-1.6")
+
+    implementation("com.googlecode.lanterna:lanterna:3.2.0-alpha1")
 }
 
 java {
