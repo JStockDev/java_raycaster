@@ -1,4 +1,4 @@
-package dev.jstock;
+package dev.jstock.client;
 
 import static io.github.libsdl4j.api.Sdl.SDL_Init;
 import static io.github.libsdl4j.api.Sdl.SDL_Quit;
@@ -25,18 +25,12 @@ import static io.github.libsdl4j.api.video.SdlVideo.SDL_CreateWindow;
 import static io.github.libsdl4j.api.video.SdlVideoConst.SDL_WINDOWPOS_CENTERED;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-
-import javax.smartcardio.TerminalFactory;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
-import com.googlecode.lanterna.TextColor.RGB;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
-import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
-import com.googlecode.lanterna.input.KeyType;
 
 import io.github.libsdl4j.api.event.SDL_Event;
 import io.github.libsdl4j.api.render.SDL_Renderer;
@@ -64,7 +58,6 @@ public class Entry {
     public static final double FOV = Math.PI / 3.0;
 
     public static void main(String[] args) {
-
         try {
             terminalRayCaster();
         } catch (Exception e) {
@@ -75,8 +68,6 @@ public class Entry {
     public static void terminalRayCaster() throws IOException {
         DefaultTerminalFactory factory = new DefaultTerminalFactory();
         Terminal terminal = factory.createTerminal();
-
-        // terminal.clearScreen();
 
         double playerPosX = 1.5;
         double playerPosY = 1.5;
@@ -134,6 +125,13 @@ public class Entry {
             double angleIncrement = FOV / screenWidth;
 
             double xDrawPos = 0;
+
+            int currentTextMapX = 0;
+            int currentTextMapY = 0;
+
+            // Unused: was potentially used for proper lighting, texturing
+            // int textMapX = 0;
+            // int textMapY = 0;
 
             while (rayAngle < playerAngle + FOV / 2.0) {
                 double horizontalRayAngle = rayAngle;
@@ -221,7 +219,7 @@ public class Entry {
                 double verticalMapX = playerPosX + xStep;
                 double verticalMapY = playerPosY + yStep;
                 double verticalRayLength = -1.0;
-
+                
                 xStep = xStep * (1.0 / yStep);
 
                 while (verticalMapX < MAP.length &&
@@ -253,14 +251,31 @@ public class Entry {
                     verticalRayLength = Double.MAX_VALUE;
                 }
 
+                
                 double rayLength = 0.0;
-
+                
                 if (horizontalRayLength < verticalRayLength) {
                     rayLength = horizontalRayLength;
-                    terminal.setForegroundColor(new TextColor.RGB(255, 0, 0));
+                    currentTextMapX = (int) horizontalMapX;
+                    currentTextMapY = (int) horizontalMapY;
+
+                    if ((currentTextMapX + currentTextMapY) % 2 == 0) {
+                        terminal.setForegroundColor(new TextColor.RGB(255, 0, 0));
+                    } else {
+                        terminal.setForegroundColor(new TextColor.RGB(230, 0, 0));
+                    }
+                    
+
                 } else {
                     rayLength = verticalRayLength;
-                    terminal.setForegroundColor(new TextColor.RGB(205, 0, 0));
+                    currentTextMapX = (int) verticalMapX;
+                    currentTextMapY = (int) verticalMapY;
+                    
+                    if ((currentTextMapX + currentTextMapY) % 2 == 0) {
+                        terminal.setForegroundColor(new TextColor.RGB(205, 0, 0));
+                    } else {
+                        terminal.setForegroundColor(new TextColor.RGB(180, 0, 0));
+                    }
                 }
 
                 double correctRay = rayLength * Math.cos(rayAngle - playerAngle);
@@ -285,18 +300,16 @@ public class Entry {
 
             }
             terminal.flush();
-            try {
 
+            try {
                 Thread.sleep(10);
             } catch (Exception e) {
-                // TODO: handle exception
+                // Should never fail?
             }
 
             terminal.clearScreen();
             terminal.resetColorAndSGR();
         }
-
-        // terminal.close();
     }
 
     public static void sdlRayCaster() {

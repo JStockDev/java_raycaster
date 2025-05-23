@@ -4,4 +4,6 @@ plugins {
 }
 
 rootProject.name = "cs1op-cw1"
-include("app")
+include("client")
+include("server")
+include("commons")
