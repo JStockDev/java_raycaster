@@ -10,8 +10,10 @@ dependencies {
     testImplementation(libs.junit)
     implementation(libs.guava)
 
-    implementation("io.github.libsdl4j:libsdl4j:2.28.4-1.6")
+    
+    implementation(project(":commons"))
     implementation("com.googlecode.lanterna:lanterna:3.2.0-alpha1")
+    implementation("org.java-websocket:Java-WebSocket:1.6.0")
 }
 
 java {
