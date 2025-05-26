@@ -1,30 +1,10 @@
 package dev.jstock.client;
 
-import static io.github.libsdl4j.api.Sdl.SDL_Init;
-import static io.github.libsdl4j.api.Sdl.SDL_Quit;
-import static io.github.libsdl4j.api.SdlSubSystemConst.SDL_INIT_EVERYTHING;
-import static io.github.libsdl4j.api.error.SdlError.SDL_GetError;
-import static io.github.libsdl4j.api.event.SDL_EventType.SDL_KEYDOWN;
-import static io.github.libsdl4j.api.event.SDL_EventType.SDL_QUIT;
-import static io.github.libsdl4j.api.event.SdlEvents.SDL_PollEvent;
-import static io.github.libsdl4j.api.keycode.SDL_Keycode.SDLK_A;
-import static io.github.libsdl4j.api.keycode.SDL_Keycode.SDLK_D;
-import static io.github.libsdl4j.api.keycode.SDL_Keycode.SDLK_ESCAPE;
-import static io.github.libsdl4j.api.keycode.SDL_Keycode.SDLK_S;
-import static io.github.libsdl4j.api.keycode.SDL_Keycode.SDLK_W;
-import static io.github.libsdl4j.api.render.SDL_RendererFlags.SDL_RENDERER_ACCELERATED;
-import static io.github.libsdl4j.api.render.SdlRender.SDL_CreateRenderer;
-import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderClear;
-import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderDrawLine;
-import static io.github.libsdl4j.api.render.SdlRender.SDL_RenderPresent;
-import static io.github.libsdl4j.api.render.SdlRender.SDL_SetRenderDrawColor;
-import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_OPENGL;
-import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
-import static io.github.libsdl4j.api.video.SDL_WindowFlags.SDL_WINDOW_SHOWN;
-import static io.github.libsdl4j.api.video.SdlVideo.SDL_CreateWindow;
-import static io.github.libsdl4j.api.video.SdlVideoConst.SDL_WINDOWPOS_CENTERED;
-
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
@@ -32,23 +12,26 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 
-import io.github.libsdl4j.api.event.SDL_Event;
-import io.github.libsdl4j.api.render.SDL_Renderer;
-import io.github.libsdl4j.api.video.SDL_Window;
+import dev.jstock.commons.Frame;
+import dev.jstock.commons.FrameDataFactory;
+import dev.jstock.commons.FrameFactory;
+import dev.jstock.commons.Game;
+import dev.jstock.commons.Player;
+import dev.jstock.commons.Frames.GameFrame;
 
 public class Entry {
-    public static final int[][] MAP = {
-            { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-            { 1, 0, 1, 0, 0, 0, 1, 0, 0, 1 },
-            { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
-            { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
-            { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-            { 1, 0, 1, 0, 1, 1, 0, 0, 0, 1 },
-            { 1, 0, 1, 0, 0, 1, 0, 0, 0, 1 },
-            { 1, 0, 1, 1, 1, 1, 1, 1, 0, 1 },
-            { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-            { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    };
+    // public static final int[][] MAP = {
+    // { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    // { 1, 0, 1, 0, 0, 0, 1, 0, 0, 1 },
+    // { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
+    // { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
+    // { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+    // { 1, 0, 1, 0, 1, 1, 0, 0, 0, 1 },
+    // { 1, 0, 1, 0, 0, 1, 0, 0, 0, 1 },
+    // { 1, 0, 1, 1, 1, 1, 1, 1, 0, 1 },
+    // { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+    // { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+    // };
 
     public static final int SCREEN_WIDTH = 960;
     public static final int SCREEN_HEIGHT = 540;
@@ -65,21 +48,42 @@ public class Entry {
         }
     }
 
-    public static void terminalRayCaster() throws IOException {
+    public static void terminalRayCaster() throws IOException, URISyntaxException, InterruptedException {
         DefaultTerminalFactory factory = new DefaultTerminalFactory();
         Terminal terminal = factory.createTerminal();
 
-        double playerPosX = 1.5;
-        double playerPosY = 1.5;
-        double playerAngle = 0.0;
+        ConcurrentLinkedQueue<Frame> frameQueue = new ConcurrentLinkedQueue<>();
+        Networking networking = new Networking(new URI("ws://localhost:45777"), frameQueue);
+
+        if (networking.connectBlocking()) {
+            System.out.println("Connected to server: " + networking.getURI());
+        } else {
+            throw new IOException("Failed to connect to server: " + networking.getURI());
+        }
+
+        Player player = new Player(1.5, 1.5, 0.0);
+        networking.send(FrameFactory.createJoinFrame(player.getIdentifier()).encodeFrame());
+
+        while (frameQueue.isEmpty()) {
+            Thread.sleep(100);
+        }
+
+        Frame frame = frameQueue.poll();
+
+        if (frame.getType() != FrameDataFactory.GAME_FRAME) {
+            throw new IOException("Failed to join game: TYPE " + frame.getType());
+        }
+
+        Game game = ((GameFrame) frame.getFrameData()).toGame();
+        byte[][] map = game.getMap();
 
         main_loop: while (true) {
             TerminalSize size = terminal.getTerminalSize();
             int screenWidth = size.getColumns();
             int screenHeight = size.getRows();
 
-            double playerMovementXOffset = MOVE_AMOUNT * Math.cos(playerAngle);
-            double playerMovementYOffset = MOVE_AMOUNT * Math.sin(playerAngle);
+            double playerMovementXOffset = MOVE_AMOUNT * Math.cos(player.getFacing());
+            double playerMovementYOffset = MOVE_AMOUNT * Math.sin(player.getFacing());
 
             while (true) {
                 KeyStroke keyStroke = terminal.pollInput();
@@ -89,20 +93,31 @@ public class Entry {
                         case Character:
                             char key = keyStroke.getCharacter();
 
+                            // ** AND LOTS OF NETWORKING CODE HERE **
+
                             switch (key) {
                                 case 'w':
-                                    playerPosX += playerMovementXOffset;
-                                    playerPosY += playerMovementYOffset;
+                                    player.setX(player.getX() + playerMovementXOffset);
+                                    player.setY(player.getY() + playerMovementYOffset);
+
+                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
                                     break;
+                                    
                                 case 's':
-                                    playerPosX -= playerMovementXOffset;
-                                    playerPosY -= playerMovementYOffset;
+                                    player.setX(player.getX() - playerMovementXOffset);
+                                    player.setY(player.getY() - playerMovementYOffset);
+
+                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
                                     break;
+
                                 case 'a':
-                                    playerAngle -= ROTATE_AMOUNT;
+                                    player.setFacing(player.getFacing() - ROTATE_AMOUNT);
+                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
                                     break;
+
                                 case 'd':
-                                    playerAngle += ROTATE_AMOUNT;
+                                    player.setFacing(player.getFacing() + ROTATE_AMOUNT);
+                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
                                     break;
 
                                 default:
@@ -120,6 +135,10 @@ public class Entry {
                     break;
                 }
             }
+
+            double playerPosX = player.getX();
+            double playerPosY = player.getY();
+            double playerAngle = player.getFacing();
 
             double rayAngle = playerAngle - FOV / 2.0;
             double angleIncrement = FOV / screenWidth;
@@ -163,12 +182,12 @@ public class Entry {
 
                 yStep = yStep * (1.0 / xStep);
 
-                while (horizontalMapX < MAP.length &&
+                while (horizontalMapX < map.length &&
                         horizontalMapX > 0.0 &&
-                        horizontalMapY < MAP.length &&
+                        horizontalMapY < map.length &&
                         horizontalMapY > 0.0) {
                     if (Math.signum(Math.cos(horizontalRayAngle)) >= 0.0) {
-                        if (MAP[(int) horizontalMapX][(int) horizontalMapY] > 0) {
+                        if (map[(int) horizontalMapX][(int) horizontalMapY] > 0) {
                             horizontalRayLength = Math.sqrt(Math.pow(horizontalMapX - playerPosX, 2.0)
                                     + Math.pow(horizontalMapY - playerPosY, 2.0));
                             break;
@@ -177,7 +196,7 @@ public class Entry {
                         horizontalMapX += 1.0;
                         horizontalMapY += yStep;
                     } else {
-                        if (MAP[(int) (horizontalMapX - 1.0)][(int) horizontalMapY] > 0) {
+                        if (map[(int) (horizontalMapX - 1.0)][(int) horizontalMapY] > 0) {
                             horizontalRayLength = Math.sqrt(Math.pow(horizontalMapX - playerPosX, 2.0)
                                     + Math.pow(horizontalMapY - playerPosY, 2.0));
                             break;
@@ -219,15 +238,15 @@ public class Entry {
                 double verticalMapX = playerPosX + xStep;
                 double verticalMapY = playerPosY + yStep;
                 double verticalRayLength = -1.0;
-                
+
                 xStep = xStep * (1.0 / yStep);
 
-                while (verticalMapX < MAP.length &&
+                while (verticalMapX < map.length &&
                         verticalMapX > 0.0 &&
-                        verticalMapY < MAP.length &&
+                        verticalMapY < map.length &&
                         verticalMapY > 0.0) {
                     if (Math.signum(Math.cos(verticalRayAngle)) == 1.0) {
-                        if (MAP[(int) verticalMapX][(int) verticalMapY] > 0) {
+                        if (map[(int) verticalMapX][(int) verticalMapY] > 0) {
                             verticalRayLength = Math.sqrt(Math.pow(verticalMapX - playerPosX, 2.0)
                                     + Math.pow(verticalMapY - playerPosY, 2.0));
                             break;
@@ -236,7 +255,7 @@ public class Entry {
                         verticalMapX += xStep;
                         verticalMapY += 1.0;
                     } else {
-                        if (MAP[(int) verticalMapX][(int) (verticalMapY - 1.0)] > 0) {
+                        if (map[(int) verticalMapX][(int) (verticalMapY - 1.0)] > 0) {
                             verticalRayLength = Math.sqrt(Math.pow(verticalMapX - playerPosX, 2.0)
                                     + Math.pow(verticalMapY - playerPosY, 2.0));
                             break;
@@ -251,9 +270,8 @@ public class Entry {
                     verticalRayLength = Double.MAX_VALUE;
                 }
 
-                
                 double rayLength = 0.0;
-                
+
                 if (horizontalRayLength < verticalRayLength) {
                     rayLength = horizontalRayLength;
                     currentTextMapX = (int) horizontalMapX;
@@ -264,13 +282,12 @@ public class Entry {
                     } else {
                         terminal.setForegroundColor(new TextColor.RGB(230, 0, 0));
                     }
-                    
 
                 } else {
                     rayLength = verticalRayLength;
                     currentTextMapX = (int) verticalMapX;
                     currentTextMapY = (int) verticalMapY;
-                    
+
                     if ((currentTextMapX + currentTextMapY) % 2 == 0) {
                         terminal.setForegroundColor(new TextColor.RGB(205, 0, 0));
                     } else {
@@ -300,12 +317,7 @@ public class Entry {
 
             }
             terminal.flush();
-
-            try {
-                Thread.sleep(10);
-            } catch (Exception e) {
-                // Should never fail?
-            }
+            Thread.sleep(10);
 
             terminal.clearScreen();
             terminal.resetColorAndSGR();

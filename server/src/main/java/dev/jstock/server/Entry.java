@@ -9,6 +9,7 @@ import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import dev.jstock.commons.FrameData;
+import dev.jstock.commons.Game;
 
 public class Entry {
     public static final int[][] MAP = {
@@ -25,7 +26,8 @@ public class Entry {
     };
 
     public static void main(String[] args) {
-        Server server = new Server();
+        Game game = new Game(MAP);
+        Server server = new Server(45777, );
 
         ServerSocket server = new ServerSocket(45777);
     }

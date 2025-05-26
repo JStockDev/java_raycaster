@@ -43,4 +43,16 @@ public class Frame {
 
         throw new IllegalArgumentException("Frame type not supported");
     }
+
+    public byte getType() {
+        return frameType;
+    }
+
+    public UUID getClientUUID() {
+        return clientUUID;
+    }
+
+    public FrameData getFrameData() {
+        return frameData;
+    }
 }
