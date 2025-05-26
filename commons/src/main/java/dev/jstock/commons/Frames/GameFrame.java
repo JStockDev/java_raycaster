@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 import dev.jstock.commons.Game;
@@ -32,11 +34,29 @@ public class GameFrame extends FrameData {
     public byte[] encode() {
         ArrayList<Byte> data = new ArrayList<>();
 
+        int mapSize = 0;
         int playerBytesLength = players.length * 40;
-        data.add(playerBytesLength)
+        for (byte[] row : map) {
+            mapSize += row.length;
+        }
+        for (byte b : ByteBuffer.allocate(8).putInt(mapSize).putInt(playerBytesLength).array()) {
+            data.add(b);
+        }
 
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'encode'");
+        for (byte[] row : map) {
+            for (byte square : row) {
+                data.add(square);
+            }
+        }
+
+        for (Player player : players) {
+            byte[] playerBytes = player.encode();
+            for (byte b : playerBytes) {
+                data.add(b);
+            }
+        }
+
+        return ArrayUtils.toPrimitive(data.toArray(new Byte[0]));
     }
 
     @Override

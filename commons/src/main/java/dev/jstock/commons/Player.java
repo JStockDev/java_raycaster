@@ -1,14 +1,22 @@
 package dev.jstock.commons;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
-public class Player {
+public class Player extends FrameData {
     private UUID identifier;
     private Double x;
     private Double y;
     private Double facing;
 
+    public Player(UUID identifier, Double playerX, Double playerY, Double playerFacing) {
+        this.identifier = identifier;
+        x = playerX;
+        y = playerY;
+        facing = playerFacing;
+    }
     public Player(Double playerX, Double playerY, Double playerFacing) {
+        identifier = UUID.randomUUID();
         x = playerX;
         y = playerY;
         facing = playerFacing;
@@ -40,5 +48,20 @@ public class Player {
         this.x = playerX;
         this.y = playerY;
         this.facing = playerFacing;
+    }
+    @Override
+    public byte[] encode() {
+        ByteBuffer buffer = ByteBuffer.allocate(40);
+        buffer.putLong(this.identifier.getMostSignificantBits());
+        buffer.putLong(this.identifier.getLeastSignificantBits());
+        buffer.putDouble(this.x);
+        buffer.putDouble(this.y);
+        buffer.putDouble(this.facing);
+
+        return buffer.array();
+    }
+    @Override
+    public byte getFrameIdentifier() {
+        return FrameDataFactory.PLAYER_FRAME;
     }
 }
