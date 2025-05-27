@@ -1,6 +1,7 @@
 package dev.jstock.commons;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class Game {
     private ArrayList<Player> players;
@@ -24,12 +25,25 @@ public class Game {
         return map;
     }
 
+    public boolean containsPlayer(UUID playerUUID) {
+        for (Player player : players) {
+            if (player.getIdentifier().equals(playerUUID)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void addPlayer(Player player) {
         players.add(player);
     }
 
     public void removePlayer(Player player) {
         players.remove(player);
+    }
+
+    public void removePlayer(UUID playerUUID) {
+        players.removeIf(player -> player.getIdentifier().equals(playerUUID));
     }
 
     public void setPlayerX(Player player, double x) {

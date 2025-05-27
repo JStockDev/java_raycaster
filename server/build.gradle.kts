@@ -12,6 +12,7 @@ dependencies {
 
 
     implementation(project(":commons"))
+    implementation("com.moandjiezana.toml:toml4j:0.7.2")
     implementation("org.java-websocket:Java-WebSocket:1.6.0")
 }
 

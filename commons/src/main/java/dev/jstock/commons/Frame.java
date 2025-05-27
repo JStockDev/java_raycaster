@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 
 public class Frame {
     private byte frameType;
@@ -18,30 +20,33 @@ public class Frame {
     }
 
     // ConcurrentLinkedQueue
-    public static Frame decodeBytes(byte[] data) {
-        byte frameType = data[0];
+    public static Frame decodeBytes(byte[] rawData) {
+        byte frameType = rawData[0];
 
-        ByteBuffer rawUUID = ByteBuffer.wrap(Arrays.copyOfRange(data, 1, 17));
-        UUID playerUUID = new UUID(rawUUID.getLong(), rawUUID.getLong());
-        FrameData fData;
+        ByteBuffer rawUUID = ByteBuffer.wrap(Arrays.copyOfRange(rawData, 1, 17));
+        UUID uuid = new UUID(rawUUID.getLong(), rawUUID.getLong());
+        FrameData data = FrameDataFactory.decodeFrameData(frameType, Arrays.copyOfRange(rawData, 17, rawData.length));
 
-        switch (frameType) {
-            case 0:
-
-                // PlayerLocation playerLocation = PlayerLocation.decode
-                break;
-
-            default:
-                break;
-        }
-
-        throw new IllegalArgumentException("Frame type not supported");
+        return new Frame(frameType, uuid, data);
     }
 
     public byte[] encodeFrame() {
-        ArrayList<Byte> data = new ArrayList();
+        ArrayList<Byte> data = new ArrayList<>();
 
-        throw new IllegalArgumentException("Frame type not supported");
+        data.add(frameType);
+        ByteBuffer uuidBuffer = ByteBuffer.allocate(16);
+        uuidBuffer.putLong(clientUUID.getMostSignificantBits());
+        uuidBuffer.putLong(clientUUID.getLeastSignificantBits());
+        for (byte b : uuidBuffer.array()) {
+            data.add(b);
+        }
+
+        byte[] frameDataBytes = frameData.encode();
+        for (byte b : frameDataBytes) {
+            data.add(b);
+        }
+        
+        return ArrayUtils.toPrimitive(data.toArray(new Byte[0]));
     }
 
     public byte getType() {

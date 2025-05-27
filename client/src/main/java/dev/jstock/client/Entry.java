@@ -3,7 +3,6 @@ package dev.jstock.client;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -33,9 +32,6 @@ public class Entry {
     // { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
     // };
 
-    public static final int SCREEN_WIDTH = 960;
-    public static final int SCREEN_HEIGHT = 540;
-
     public static final double MOVE_AMOUNT = 0.02;
     public static final double ROTATE_AMOUNT = 0.05;
     public static final double FOV = Math.PI / 3.0;
@@ -61,7 +57,7 @@ public class Entry {
             throw new IOException("Failed to connect to server: " + networking.getURI());
         }
 
-        Player player = new Player(1.5, 1.5, 0.0);
+        Player player = new Player();
         networking.send(FrameFactory.createJoinFrame(player.getIdentifier()).encodeFrame());
 
         while (frameQueue.isEmpty()) {
@@ -76,6 +72,12 @@ public class Entry {
 
         Game game = ((GameFrame) frame.getFrameData()).toGame();
         byte[][] map = game.getMap();
+
+        for (Player netPlayer : game.getPlayers()) {
+            if (netPlayer.getIdentifier().equals(player.getIdentifier())) {
+                player = netPlayer;
+            }
+        }
 
         main_loop: while (true) {
             TerminalSize size = terminal.getTerminalSize();

@@ -8,28 +8,23 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.handshake.ServerHandshake;
 import org.java_websocket.server.WebSocketServer;
 
+import com.moandjiezana.toml.Toml;
+
 import dev.jstock.commons.FrameData;
 import dev.jstock.commons.Game;
 
 public class Entry {
-    public static final int[][] MAP = {
-            { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-            { 1, 0, 1, 0, 0, 0, 1, 0, 0, 1 },
-            { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
-            { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
-            { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-            { 1, 0, 1, 0, 1, 1, 0, 0, 0, 1 },
-            { 1, 0, 1, 0, 0, 1, 0, 0, 0, 1 },
-            { 1, 0, 1, 1, 1, 1, 1, 1, 0, 1 },
-            { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-            { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    };
+    public static byte[][] MAP;
 
     public static void main(String[] args) {
-        Game game = new Game(MAP);
-        Server server = new Server(45777, );
+        // Server server = new Server(45777, );
+        
+        Toml toml = new Toml().read("./config.toml");
+        Config config = toml.to(Config.class);
+        
+        MAP = config.getMap();
+        Server server = new Server(config.getPort());
 
-        ServerSocket server = new ServerSocket(45777);
     }
 
     

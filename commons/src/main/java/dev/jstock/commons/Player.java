@@ -21,6 +21,9 @@ public class Player extends FrameData {
         y = playerY;
         facing = playerFacing;
     }
+    public Player() {
+        identifier = UUID.randomUUID();
+    }
     public UUID getIdentifier() {
         return identifier;
     }
