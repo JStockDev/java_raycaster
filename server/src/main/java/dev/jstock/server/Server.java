@@ -1,6 +1,8 @@
 package dev.jstock.server;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.UUID;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -11,11 +13,20 @@ import dev.jstock.commons.FrameDataFactory;
 import dev.jstock.commons.FrameFactory;
 import dev.jstock.commons.Game;
 import dev.jstock.commons.Player;
+import dev.jstock.commons.Frames.JoinFrame;
+import dev.jstock.commons.Frames.LeaveFrame;
 
 public class Server extends WebSocketServer {
 
     public Server(int port) {
         super(new java.net.InetSocketAddress(port));
+    }
+
+    HashMap<WebSocket, UUID> connections = new HashMap<>();
+
+    @Override
+    public void onStart() {
+        System.out.println("Server started: " + super.getAddress());
     }
 
     @Override
@@ -26,11 +37,20 @@ public class Server extends WebSocketServer {
     @Override
     public void onClose(WebSocket con, int code, String reason, boolean remote) {
         System.out.println("Client closed: " + con.getRemoteSocketAddress());
-    }
 
-    @Override
-    public void onError(WebSocket con, Exception ex) {
-        System.err.println("Client error: " + con.getRemoteSocketAddress());
+        synchronized (connections) {
+            UUID player = connections.get(con);
+            if (player != null) {
+                Game game = GameSingleton.getInstance();
+                game.removePlayer(player);
+
+                connections.remove(con);
+                broadcast(FrameFactory.createLeaveFrame(player).encodeFrame());
+                return;
+            } else {
+                System.out.println("Client closed without joining: " + con.getRemoteSocketAddress());
+            }
+        }
     }
 
     @Override
@@ -40,28 +60,40 @@ public class Server extends WebSocketServer {
 
         switch (frame.getType()) {
             case FrameDataFactory.JOIN_FRAME:
-                if (game.containsPlayer(frame.getClientUUID()) == true) {
-                    System.out.println("Client error: Player already exists" + frame.getClientUUID());
+                JoinFrame joinFrame = (JoinFrame) frame.getFrameData();
+
+                if (game.containsPlayer(joinFrame.getClientUUID()) == true) {
+                    System.out.println("Client error: Player already exists" + joinFrame.getClientUUID());
                     con.close();
                     return;
-                } else {
-                    Player player = new Player(frame.getClientUUID(), 1.5, 1.5, 0.0);
-                    game.addPlayer(player);
-                    con.send(FrameFactory.createGameFrame(player, game).encodeFrame());
                 }
 
+                synchronized (connections) {
+                    connections.put(con, joinFrame.getClientUUID());
+                }
+
+                Player newPlayer = new Player(joinFrame.getClientUUID());
+                game.addPlayer(newPlayer);
+
+                con.send(FrameFactory.createGameFrame(game).encodeFrame());
+                selectiveBroadcast(con, FrameFactory.createPlayerFrame(newPlayer));
+                
                 return;
             case FrameDataFactory.LEAVE_FRAME:
-                game.removePlayer(frame.getClientUUID());
+                LeaveFrame leaveFrame = (LeaveFrame) frame.getFrameData();
+                game.removePlayer(leaveFrame.getClientUUID());
                 con.close();
-
-                broadcast(FrameFactory.createLeaveFrame(frame.getClientUUID()).encodeFrame());
+                // In theory does broadcasting in onClose?
                 break;
             case FrameDataFactory.GAME_FRAME:
                 // Should never receive game frame from client
                 break;
             case FrameDataFactory.PLAYER_FRAME:
-            
+                Player player = (Player) frame.getFrameData();
+                game.updatePlayer(player);
+                System.out.println(player.getIdentifier() + "-> " + player.getX() + ", " + player.getY() + ", " + player.getFacing());
+
+                selectiveBroadcast(con, FrameFactory.createPlayerFrame(player));
                 return;
             case FrameDataFactory.OBJECTIVE_FRAME:
                 return;
@@ -74,10 +106,20 @@ public class Server extends WebSocketServer {
     }
 
     @Override
-    public void onStart() {
+    public void onError(WebSocket con, Exception ex) {
+        System.err.println("Client error: " + con.getRemoteSocketAddress());
+        con.close();
     }
 
     @Override
     public void onMessage(WebSocket conn, String message) {
+    }
+
+    private synchronized void selectiveBroadcast(WebSocket doNotInclude, Frame frame) {
+        for (WebSocket connection : connections.keySet()) {
+            if (connection != doNotInclude) {
+                connection.send(frame.encodeFrame());
+            }
+        }
     }
 }

@@ -24,6 +24,8 @@ java {
 
 application {
     mainClass = "dev.jstock.server.Entry"
+
+    tasks.run.get().workingDir = rootProject.projectDir
 }
 
 tasks.jar {

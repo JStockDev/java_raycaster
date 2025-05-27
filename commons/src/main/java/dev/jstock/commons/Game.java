@@ -38,6 +38,15 @@ public class Game {
         players.add(player);
     }
 
+    public void updatePlayer(Player player) {
+        for (int i = 0; i < players.size(); i++) {
+            if (players.get(i).getIdentifier().equals(player.getIdentifier())) {
+                players.set(i, player);
+                return;
+            }
+        }
+    }
+
     public void removePlayer(Player player) {
         players.remove(player);
     }

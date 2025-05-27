@@ -4,7 +4,7 @@ public class Config {
     private int port;
     private byte[][] map;
 
-    public Config(int address, byte[][] map) {
+    public Config(int port, byte[][] map) {
         this.port = port;
         this.map = map;
     }

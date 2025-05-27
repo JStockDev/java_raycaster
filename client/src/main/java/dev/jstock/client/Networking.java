@@ -19,30 +19,31 @@ public class Networking extends WebSocketClient {
     }
 
     @Override
-    public void onOpen(ServerHandshake handshakedata) {
-        System.out.println("Connected to server: " + getURI());
-    }
-
-    
+    public void onOpen(ServerHandshake handshakedata) {}
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        
+        System.out.println("Disconnected from server: " + getURI() + " | Code: " + code + " | Reason: " + reason);
+        if (remote) {
+            System.out.println("Remote disconnection detected.");
+        } else {
+            System.out.println("Local disconnection.");
+        }
     }
 
     @Override
     public void onError(Exception ex) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onError'");
+        System.err.println("Error occurred: " + ex.getMessage());
     }
 
     @Override
     public void onMessage(ByteBuffer bytes) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'onMessage'");
+        Frame frame = Frame.decodeBytes(bytes.array());
+        frameQueue.add(frame);
     }
 
     @Override
-    public void onMessage(String message) {}
-    
+    public void onMessage(String message) {
+    }
+
 }

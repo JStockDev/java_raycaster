@@ -15,28 +15,31 @@ public class FrameDataFactory {
     public static final byte OBJECTIVE_FRAME = 4;
     public static final byte ERROR_FRAME = 5;
 
-    public static byte[] encodeFrameData(FrameData frameData) {
-        byte[] data = new byte[24];
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        buffer.put(frameData.encode());
-        return data;
-    }
-
     public static FrameData decodeFrameData(int frameType, byte[] data) {
         switch (frameType) {
             case JOIN_FRAME:
-                if (data.length != 0) {
+                if (data.length != 16) {
                     throw new IndexOutOfBoundsException(
                             "Data array is not the correct size to decode player location");
                 }
-                return new JoinFrame();
+                ByteBuffer rawJoinUUID = ByteBuffer.wrap(data);
+                long joinMSB = rawJoinUUID.getLong();
+                long joinLSB = rawJoinUUID.getLong();
+                UUID joinUUID = new UUID(joinMSB, joinLSB);
+
+                return new JoinFrame(joinUUID);
 
             case LEAVE_FRAME:
-                if (data.length != 0) {
+                if (data.length != 16) {
                     throw new IndexOutOfBoundsException(
                             "Data array is not the correct size to decode player location");
                 }
-                return new LeaveFrame();
+                ByteBuffer rawUUID = ByteBuffer.wrap(data);
+                long leaveMSB = rawUUID.getLong();
+                long leaveLSB = rawUUID.getLong();
+                UUID leaveUUID = new UUID(leaveMSB, leaveLSB);
+
+                return new LeaveFrame(leaveUUID);
 
             case PLAYER_FRAME:
                 if (data.length != 40) {

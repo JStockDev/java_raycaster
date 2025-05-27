@@ -2,7 +2,7 @@ package dev.jstock.client;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.googlecode.lanterna.TerminalSize;
@@ -17,20 +17,9 @@ import dev.jstock.commons.FrameFactory;
 import dev.jstock.commons.Game;
 import dev.jstock.commons.Player;
 import dev.jstock.commons.Frames.GameFrame;
+import dev.jstock.commons.Frames.LeaveFrame;
 
 public class Entry {
-    // public static final int[][] MAP = {
-    // { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    // { 1, 0, 1, 0, 0, 0, 1, 0, 0, 1 },
-    // { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
-    // { 1, 0, 1, 0, 1, 0, 1, 0, 0, 1 },
-    // { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-    // { 1, 0, 1, 0, 1, 1, 0, 0, 0, 1 },
-    // { 1, 0, 1, 0, 0, 1, 0, 0, 0, 1 },
-    // { 1, 0, 1, 1, 1, 1, 1, 1, 0, 1 },
-    // { 1, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-    // { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
-    // };
 
     public static final double MOVE_AMOUNT = 0.02;
     public static final double ROTATE_AMOUNT = 0.05;
@@ -44,7 +33,7 @@ public class Entry {
         }
     }
 
-    public static void terminalRayCaster() throws IOException, URISyntaxException, InterruptedException {
+    public static void terminalRayCaster() throws Exception {
         DefaultTerminalFactory factory = new DefaultTerminalFactory();
         Terminal terminal = factory.createTerminal();
 
@@ -57,26 +46,33 @@ public class Entry {
             throw new IOException("Failed to connect to server: " + networking.getURI());
         }
 
-        Player player = new Player();
-        networking.send(FrameFactory.createJoinFrame(player.getIdentifier()).encodeFrame());
-
+        UUID clientUUID = UUID.randomUUID();
+        networking.send(FrameFactory.createJoinFrame(clientUUID).encodeFrame());
         while (frameQueue.isEmpty()) {
             Thread.sleep(100);
         }
 
-        Frame frame = frameQueue.poll();
+        Frame joinFrame = frameQueue.poll();
 
-        if (frame.getType() != FrameDataFactory.GAME_FRAME) {
-            throw new IOException("Failed to join game: TYPE " + frame.getType());
+        if (joinFrame == null || joinFrame.getType() != FrameDataFactory.GAME_FRAME) {
+            throw new IOException("Failed to join game: TYPE " + joinFrame.getType());
         }
 
-        Game game = ((GameFrame) frame.getFrameData()).toGame();
+        Game game = ((GameFrame) joinFrame.getFrameData()).toGame();
         byte[][] map = game.getMap();
 
+        System.out.println("Game joined. Map size: " + map.length);
+
+        Player player = null;
+
         for (Player netPlayer : game.getPlayers()) {
-            if (netPlayer.getIdentifier().equals(player.getIdentifier())) {
+            if (netPlayer.getIdentifier().equals(clientUUID)) {
                 player = netPlayer;
             }
+        }
+
+        if (player == null) {
+            throw new Exception("Failed to find player with UUID: " + clientUUID);
         }
 
         main_loop: while (true) {
@@ -87,54 +83,76 @@ public class Entry {
             double playerMovementXOffset = MOVE_AMOUNT * Math.cos(player.getFacing());
             double playerMovementYOffset = MOVE_AMOUNT * Math.sin(player.getFacing());
 
-            while (true) {
-                KeyStroke keyStroke = terminal.pollInput();
+            synchronized (frameQueue) {
+                while (!frameQueue.isEmpty()) {
+                    Frame frame = frameQueue.poll();
 
-                if (keyStroke != null) {
-                    switch (keyStroke.getKeyType()) {
-                        case Character:
-                            char key = keyStroke.getCharacter();
-
-                            // ** AND LOTS OF NETWORKING CODE HERE **
-
-                            switch (key) {
-                                case 'w':
-                                    player.setX(player.getX() + playerMovementXOffset);
-                                    player.setY(player.getY() + playerMovementYOffset);
-
-                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
-                                    break;
-                                    
-                                case 's':
-                                    player.setX(player.getX() - playerMovementXOffset);
-                                    player.setY(player.getY() - playerMovementYOffset);
-
-                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
-                                    break;
-
-                                case 'a':
-                                    player.setFacing(player.getFacing() - ROTATE_AMOUNT);
-                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
-                                    break;
-
-                                case 'd':
-                                    player.setFacing(player.getFacing() + ROTATE_AMOUNT);
-                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
-                                    break;
-
-                                default:
-                                    break;
+                    switch (frame.getType()) {
+                        case FrameDataFactory.PLAYER_FRAME:
+                            Player recvPlayer = (Player) frame.getFrameData();
+                            if (game.containsPlayer(recvPlayer.getIdentifier())) {
+                                game.updatePlayer(recvPlayer);
+                                System.out.println(recvPlayer.getIdentifier() + "-> " + recvPlayer.getX() + ", " + recvPlayer.getY() + ", " + recvPlayer.getFacing());
+                            } else {
+                                System.out.println("New player: " + recvPlayer.getIdentifier());
+                                game.addPlayer(recvPlayer);
                             }
 
                             break;
-                        case Escape:
-                            break main_loop;
-                        default:
+                        case FrameDataFactory.LEAVE_FRAME:
+                            UUID leavePlayerUUID = ((LeaveFrame) frame.getFrameData()).getClientUUID();
+                            game.removePlayer(leavePlayerUUID);
+                            System.out.println("Player left: " + leavePlayerUUID);
                             break;
 
+                        default:
+                            break;
                     }
-                } else {
-                    break;
+                }
+            }
+
+            KeyStroke keyStroke = terminal.pollInput();
+
+            if (keyStroke != null) {
+                switch (keyStroke.getKeyType()) {
+                    case Character:
+                        char key = keyStroke.getCharacter();
+
+                        switch (key) {
+                            case 'w':
+                                player.setX(player.getX() + playerMovementXOffset);
+                                player.setY(player.getY() + playerMovementYOffset);
+
+                                networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                break;
+
+                            case 's':
+                                player.setX(player.getX() - playerMovementXOffset);
+                                player.setY(player.getY() - playerMovementYOffset);
+
+                                networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                break;
+
+                            case 'a':
+                                player.setFacing(player.getFacing() - ROTATE_AMOUNT);
+                                networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                break;
+
+                            case 'd':
+                                player.setFacing(player.getFacing() + ROTATE_AMOUNT);
+                                networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                break;
+
+                            default:
+                                break;
+                        }
+
+                        break;
+                    case Escape:
+                        break main_loop;
+                    default:
+                        break;
+
                 }
             }
 

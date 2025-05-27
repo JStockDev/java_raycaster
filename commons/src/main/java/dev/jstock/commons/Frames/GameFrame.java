@@ -4,8 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 import dev.jstock.commons.Game;
@@ -56,7 +54,13 @@ public class GameFrame extends FrameData {
             }
         }
 
-        return ArrayUtils.toPrimitive(data.toArray(new Byte[0]));
+
+        byte[] frameDataArray = new byte[data.size()];
+        for (int i = 0; i < data.size(); i++) {
+            frameDataArray[i] = data.get(i);
+        }
+
+        return frameDataArray;
     }
 
     @Override
