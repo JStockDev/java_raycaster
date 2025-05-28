@@ -10,7 +10,7 @@ public class Entry {
 
     public static void main(String[] args) throws Exception {
         
-        String rawFile = Files.readString(Path.of("./config.toml"));
+        String rawFile = Files.readString(Path.of("./server_config.toml"));
         Config config = new Toml().read(rawFile).to(Config.class);
 
         MAP = config.getMap();

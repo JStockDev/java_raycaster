@@ -21,6 +21,18 @@ public class Game {
         return players.toArray(new Player[0]);
     }
 
+    public Player[] getOtherPlayers(Player player) {
+        ArrayList<Player> players = new ArrayList<>();
+        
+        for (Player p : this.players) {
+            if (!p.getIdentifier().equals(player.getIdentifier())) {
+                players.add(p);
+            }
+        }
+
+        return players.toArray(new Player[0]);
+    }
+
     public byte[][] getMap() {
         return map;
     }

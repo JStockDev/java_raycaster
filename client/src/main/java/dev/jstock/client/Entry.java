@@ -139,17 +139,34 @@ public class Entry {
 
                         switch (key) {
                             case 'w':
-                                player.setX(player.getX() + playerMovementXOffset);
-                                player.setY(player.getY() + playerMovementYOffset);
+                                double posXOffset = player.getX() + playerMovementXOffset;
+                                double posYOffset = player.getY() + playerMovementYOffset;
 
-                                networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                if (posXOffset >= 0 && posXOffset < map.length &&
+                                        posYOffset >= 0 && posYOffset < map.length &&
+                                        map[(int) posXOffset][(int) posYOffset] == 0) {
+
+                                    player.setX(posXOffset);
+                                    player.setY(posYOffset);
+                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                }
+
                                 break;
 
                             case 's':
-                                player.setX(player.getX() - playerMovementXOffset);
-                                player.setY(player.getY() - playerMovementYOffset);
 
-                                networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                double negativeXOffset = player.getX() - playerMovementXOffset;
+                                double negativeYOffset = player.getY() - playerMovementYOffset;
+
+                                if (negativeXOffset >= 0 && negativeXOffset < map.length &&
+                                        negativeYOffset >= 0 && negativeYOffset < map.length &&
+                                        map[(int) negativeXOffset][(int) negativeYOffset] == 0) {
+
+                                    player.setX(negativeXOffset);
+                                    player.setY(negativeYOffset);
+                                    networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+                                }
+
                                 break;
 
                             case 'a':
@@ -174,6 +191,13 @@ public class Entry {
 
                 }
             }
+
+            int spriteAmount = game.getOtherPlayers(player).length;
+
+            double[] spriteBuffer = new double[screenWidth];
+
+            int[] spriteOrder = new int[spriteAmount];
+            double[] spriteDistance = new double[spriteAmount];
 
             double playerPosX = player.getX();
             double playerPosY = player.getY();
@@ -333,6 +357,10 @@ public class Entry {
                 startRow = Math.max(0, startRow);
                 endRow = Math.min(screenHeight - 1, endRow);
 
+                if (column >= 0 && column < screenWidth) {
+                    spriteBuffer[column] = correctedRay;
+                }
+
                 double textureDrawStep = textureSize / rayHeight;
                 double textureDrawPos = (startRow - screenHeight / 2.0 + rayHeight / 2.0) * textureDrawStep;
 
@@ -346,36 +374,80 @@ public class Entry {
                         terminal.setForegroundColor(ewTexture[textureSize * textureY + textureX]);
                     }
 
-                    // No texturing
-                    // if (horizontalRayLength < verticalRayLength) {
-                    // if ((horizontalMapX + horizontalMapY) % 2 == 0) {
-                    // terminal.setForegroundColor(new TextColor.RGB(255, 0, 0));
-                    // } else {
-                    // terminal.setForegroundColor(new TextColor.RGB(230, 0, 0));
-                    // }
-                    // } else {
-                    // if ((verticalMapX + verticalMapY) % 2 == 0) {
-                    // terminal.setForegroundColor(new TextColor.RGB(205, 0, 0));
-                    // } else {
-                    // terminal.setForegroundColor(new TextColor.RGB(180, 0, 0));
-                    // }
-                    // }
-
                     terminal.setCursorPosition(column, row);
                     terminal.putCharacter('█');
 
                     textureDrawPos += textureDrawStep;
                 }
 
-                // for (int row = startRow; row <= endRow; row++) {
-                // terminal.setCursorPosition(column, row);
-                // terminal.putCharacter('█');
-                // }
-
                 xDrawPos += 1.0;
                 rayAngle += angleIncrement;
 
             }
+
+            for (int i = 0; i < spriteAmount; i++) {
+                Player sprite = game.getOtherPlayers(player)[i];
+                double spriteX = sprite.getX();
+                double spriteY = sprite.getY();
+
+                double spriteDist = Math.pow(playerPosX - spriteX, 2.0) + Math.pow(playerPosY - spriteY, 2.0);
+
+                spriteOrder[i] = i;
+                spriteDistance[i] = spriteDist;
+            }
+
+            SpriteSorter.sortSprites(spriteOrder, spriteDistance);
+
+            double dirX = Math.cos(playerAngle);
+            double dirY = Math.sin(playerAngle);
+            double planeX = -dirY * Math.tan(FOV / 2);
+            double planeY = dirX * Math.tan(FOV / 2);
+
+            for (int i = 0; i < spriteAmount; i++) {
+                double spriteX = game.getOtherPlayers(player)[spriteOrder[i]].getX() - playerPosX;
+                double spriteY = game.getOtherPlayers(player)[spriteOrder[i]].getY() - playerPosY;
+
+                double invDet = 1.0 / (planeX * dirY - dirX * planeY);
+
+                double transformX = invDet * (dirY * spriteX - dirX * spriteY);
+                double transformY = invDet * (-planeY * spriteX + planeX * spriteY);
+
+                if (transformY > 0) {
+                    int spriteScreenX = (int) ((screenWidth / 2) * (1 + transformX / transformY));
+                    int spriteHeight = Math.abs((int) (screenHeight / transformY));
+
+                    int drawStartY = -spriteHeight / 2 + ((int) (screenHeight / 1.85));
+                    if (drawStartY < 0) {
+                        drawStartY = 0;
+                    }
+                    int drawEndY = spriteHeight / 2 + ((int) (screenHeight / 1.85));
+                    if (drawEndY >= screenHeight) {
+                        drawEndY = screenHeight - 1;
+                    }
+
+                    int spriteWidth = Math.abs((int) (screenHeight / (transformY)));
+
+                    int drawStartX = -spriteWidth / 2 + spriteScreenX;
+                    if (drawStartX < 0) {
+                        drawStartX = 0;
+                    }
+                    int drawEndX = spriteWidth / 2 + spriteScreenX;
+                    if (drawEndX >= screenWidth) {
+                        drawEndX = screenWidth - 1;
+                    }
+
+                    for (int stripe = drawStartX; stripe < drawEndX; stripe++) {
+                        if (stripe >= 0 && stripe < screenWidth && transformY < spriteBuffer[stripe]) {
+                            for (int y = drawStartY; y < drawEndY; y++) {
+                                terminal.setForegroundColor(new TextColor.RGB(0, 255, 0));
+                                terminal.setCursorPosition(stripe, y);
+                                terminal.putCharacter('█');
+                            }
+                        }
+                    }
+                }
+            }
+
             terminal.flush();
             Thread.sleep(10);
 
