@@ -7,6 +7,7 @@ public class GameSingleton {
 
     public static synchronized Game getInstance() {
         if (instance == null) {
+
             instance = new Game(Entry.MAP);
         }
         return instance;

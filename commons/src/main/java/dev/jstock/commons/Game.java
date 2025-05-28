@@ -23,7 +23,7 @@ public class Game {
 
     public Player[] getOtherPlayers(Player player) {
         ArrayList<Player> players = new ArrayList<>();
-        
+
         for (Player p : this.players) {
             if (!p.getIdentifier().equals(player.getIdentifier())) {
                 players.add(p);
@@ -35,6 +35,66 @@ public class Game {
 
     public byte[][] getMap() {
         return map;
+    }
+
+    public double getStartingX() {
+        double startingX = 0.5;
+
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[i].length; j++) {
+                if (map[i][j] == 2) {
+                    startingX += i;
+                    break;
+                }
+            }
+        }
+
+        return startingX;
+    }
+
+    public double getStartingY() {
+        double startingY = 0.5;
+
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[i].length; j++) {
+                if (map[i][j] == 2) {
+                    startingY += j;
+                    break;
+                }
+            }
+        }
+
+        return startingY;
+    }
+
+    public double getObjectiveX() {
+        double objectiveX = 0.5;
+
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[i].length; j++) {
+                if (map[i][j] == 3) {
+                    objectiveX += i;
+                    break;
+                }
+            }
+        }
+
+        return objectiveX;
+    }
+
+    public double getObjectiveY() {
+        double objectiveY = 0.5;
+
+        for (int i = 0; i < map.length; i++) {
+            for (int j = 0; j < map[i].length; j++) {
+                if (map[i][j] == 3) {
+                    objectiveY += j;
+                    break;
+                }
+            }
+        }
+
+        return objectiveY;
     }
 
     public boolean containsPlayer(UUID playerUUID) {

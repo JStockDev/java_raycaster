@@ -61,8 +61,10 @@ public class Entry {
         Game game = ((GameFrame) joinFrame.getFrameData()).toGame();
         byte[][] map = game.getMap();
 
-        System.out.println("Game joined. Map size: " + map.length);
-
+        System.out.println("Game joined. You are: " + clientUUID);
+        System.out.println("Map size: " + map.length + "x" + map[0].length);
+        System.out.println("Players in game: " + game.getPlayers().length);
+        System.out.println("Objective at: " + game.getObjectiveX() + ", " + game.getObjectiveY());
         Player player = null;
 
         for (Player netPlayer : game.getPlayers()) {
@@ -110,8 +112,6 @@ public class Entry {
                             Player recvPlayer = (Player) frame.getFrameData();
                             if (game.containsPlayer(recvPlayer.getIdentifier())) {
                                 game.updatePlayer(recvPlayer);
-                                System.out.println(recvPlayer.getIdentifier() + "-> " + recvPlayer.getX() + ", "
-                                        + recvPlayer.getY() + ", " + recvPlayer.getFacing());
                             } else {
                                 System.out.println("New player: " + recvPlayer.getIdentifier());
                                 game.addPlayer(recvPlayer);
@@ -144,7 +144,7 @@ public class Entry {
 
                                 if (posXOffset >= 0 && posXOffset < map.length &&
                                         posYOffset >= 0 && posYOffset < map.length &&
-                                        map[(int) posXOffset][(int) posYOffset] == 0) {
+                                        map[(int) posXOffset][(int) posYOffset] != 1) {
 
                                     player.setX(posXOffset);
                                     player.setY(posYOffset);
@@ -160,7 +160,7 @@ public class Entry {
 
                                 if (negativeXOffset >= 0 && negativeXOffset < map.length &&
                                         negativeYOffset >= 0 && negativeYOffset < map.length &&
-                                        map[(int) negativeXOffset][(int) negativeYOffset] == 0) {
+                                        map[(int) negativeXOffset][(int) negativeYOffset] != 1) {
 
                                     player.setX(negativeXOffset);
                                     player.setY(negativeYOffset);
@@ -192,7 +192,7 @@ public class Entry {
                 }
             }
 
-            int spriteAmount = game.getOtherPlayers(player).length;
+            int spriteAmount = game.getOtherPlayers(player).length + 1;
 
             double[] spriteBuffer = new double[screenWidth];
 
@@ -251,7 +251,7 @@ public class Entry {
                         horizontalMapY < map.length &&
                         horizontalMapY > 0.0) {
                     if (Math.signum(Math.cos(horizontalRayAngle)) >= 0.0) {
-                        if (map[(int) horizontalMapX][(int) horizontalMapY] > 0) {
+                        if (map[(int) horizontalMapX][(int) horizontalMapY] == 1) {
                             horizontalRayLength = Math.sqrt(Math.pow(horizontalMapX - playerPosX, 2.0)
                                     + Math.pow(horizontalMapY - playerPosY, 2.0));
                             break;
@@ -260,7 +260,7 @@ public class Entry {
                         horizontalMapX += 1.0;
                         horizontalMapY += yStep;
                     } else {
-                        if (map[(int) (horizontalMapX - 1.0)][(int) horizontalMapY] > 0) {
+                        if (map[(int) (horizontalMapX - 1.0)][(int) horizontalMapY] == 1) {
                             horizontalRayLength = Math.sqrt(Math.pow(horizontalMapX - playerPosX, 2.0)
                                     + Math.pow(horizontalMapY - playerPosY, 2.0));
                             break;
@@ -310,7 +310,7 @@ public class Entry {
                         verticalMapY < map.length &&
                         verticalMapY > 0.0) {
                     if (Math.signum(Math.cos(verticalRayAngle)) == 1.0) {
-                        if (map[(int) verticalMapX][(int) verticalMapY] > 0) {
+                        if (map[(int) verticalMapX][(int) verticalMapY] == 1) {
                             verticalRayLength = Math.sqrt(Math.pow(verticalMapX - playerPosX, 2.0)
                                     + Math.pow(verticalMapY - playerPosY, 2.0));
                             break;
@@ -319,7 +319,7 @@ public class Entry {
                         verticalMapX += xStep;
                         verticalMapY += 1.0;
                     } else {
-                        if (map[(int) verticalMapX][(int) (verticalMapY - 1.0)] > 0) {
+                        if (map[(int) verticalMapX][(int) (verticalMapY - 1.0)] == 1) {
                             verticalRayLength = Math.sqrt(Math.pow(verticalMapX - playerPosX, 2.0)
                                     + Math.pow(verticalMapY - playerPosY, 2.0));
                             break;
@@ -385,8 +385,19 @@ public class Entry {
 
             }
 
+            Sprite[] sprites = new Sprite[spriteAmount];
+
+            // Objective sprite
+            sprites[0] = new Sprite(game.getObjectiveX(), game.getObjectiveY(), new TextColor.RGB(0, 0, 255));
+
+            // Players
+            for (int i = 1; i < spriteAmount; i++) {
+                Player sprite = game.getOtherPlayers(player)[i - 1];
+                sprites[i] = new Sprite(sprite.getX(), sprite.getY(), new TextColor.RGB(0, 255, 0));
+            }
+
             for (int i = 0; i < spriteAmount; i++) {
-                Player sprite = game.getOtherPlayers(player)[i];
+                Sprite sprite = sprites[i];
                 double spriteX = sprite.getX();
                 double spriteY = sprite.getY();
 
@@ -404,8 +415,8 @@ public class Entry {
             double planeY = dirX * Math.tan(FOV / 2);
 
             for (int i = 0; i < spriteAmount; i++) {
-                double spriteX = game.getOtherPlayers(player)[spriteOrder[i]].getX() - playerPosX;
-                double spriteY = game.getOtherPlayers(player)[spriteOrder[i]].getY() - playerPosY;
+                double spriteX = sprites[i].getX() - playerPosX;
+                double spriteY = sprites[i].getY() - playerPosY;
 
                 double invDet = 1.0 / (planeX * dirY - dirX * planeY);
 
@@ -439,7 +450,7 @@ public class Entry {
                     for (int stripe = drawStartX; stripe < drawEndX; stripe++) {
                         if (stripe >= 0 && stripe < screenWidth && transformY < spriteBuffer[stripe]) {
                             for (int y = drawStartY; y < drawEndY; y++) {
-                                terminal.setForegroundColor(new TextColor.RGB(0, 255, 0));
+                                terminal.setForegroundColor(sprites[i].getColor());
                                 terminal.setCursorPosition(stripe, y);
                                 terminal.putCharacter('█');
                             }

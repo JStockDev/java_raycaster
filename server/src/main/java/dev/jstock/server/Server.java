@@ -72,18 +72,17 @@ public class Server extends WebSocketServer {
                     connections.put(con, joinFrame.getClientUUID());
                 }
 
-                Player newPlayer = new Player(joinFrame.getClientUUID());
+                Player newPlayer = new Player(joinFrame.getClientUUID(), game.getStartingX(), game.getStartingY(), 0.0);
                 game.addPlayer(newPlayer);
 
                 con.send(FrameFactory.createGameFrame(game).encodeFrame());
                 selectiveBroadcast(con, FrameFactory.createPlayerFrame(newPlayer));
-                
+
                 return;
             case FrameDataFactory.LEAVE_FRAME:
                 LeaveFrame leaveFrame = (LeaveFrame) frame.getFrameData();
                 game.removePlayer(leaveFrame.getClientUUID());
                 con.close();
-                // In theory does broadcasting in onClose?
                 break;
             case FrameDataFactory.GAME_FRAME:
                 // Should never receive game frame from client
@@ -91,7 +90,8 @@ public class Server extends WebSocketServer {
             case FrameDataFactory.PLAYER_FRAME:
                 Player player = (Player) frame.getFrameData();
                 game.updatePlayer(player);
-                System.out.println(player.getIdentifier() + " -> " + player.getX() + ", " + player.getY() + ", " + player.getFacing());
+                System.out.println(player.getIdentifier() + " -> " + player.getX() + ", " + player.getY() + ", "
+                        + player.getFacing());
 
                 selectiveBroadcast(con, FrameFactory.createPlayerFrame(player));
                 return;

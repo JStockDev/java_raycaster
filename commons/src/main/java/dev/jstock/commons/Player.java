@@ -15,12 +15,6 @@ public class Player extends FrameData {
         y = playerY;
         facing = playerFacing;
     }
-    public Player(UUID identifier) {
-        this.identifier = identifier;
-        x = 1.5;
-        y = 1.5;
-        facing = 0.0;
-    }
     public UUID getIdentifier() {
         return identifier;
     }
