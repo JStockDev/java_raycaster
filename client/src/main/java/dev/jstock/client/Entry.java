@@ -54,7 +54,7 @@ public class Entry {
 
         Frame joinFrame = frameQueue.poll();
 
-        if (joinFrame == null || joinFrame.getType() != FrameDataFactory.GAME_FRAME) {
+        if (joinFrame.getType() != FrameDataFactory.GAME_FRAME) {
             throw new IOException("Failed to join game: TYPE " + joinFrame.getType());
         }
 
@@ -75,6 +75,24 @@ public class Entry {
             throw new Exception("Failed to find player with UUID: " + clientUUID);
         }
 
+        int textureSize = 64;
+        TextColor.RGB[] nsTexture = new TextColor.RGB[textureSize * textureSize];
+        TextColor.RGB[] ewTexture = new TextColor.RGB[textureSize * textureSize];
+
+        for (int x = 0; x < textureSize; x++) {
+            for (int y = 0; y < textureSize; y++) {
+                int colour = y * (256 / textureSize);
+                nsTexture[textureSize * y + x] = new TextColor.RGB(colour, 0, 0);
+            }
+        }
+
+        for (int x = 0; x < textureSize; x++) {
+            for (int y = 0; y < textureSize; y++) {
+                int colour = y * (128 / textureSize);
+                ewTexture[textureSize * y + x] = new TextColor.RGB(colour, 0, 0);
+            }
+        }
+
         main_loop: while (true) {
             TerminalSize size = terminal.getTerminalSize();
             int screenWidth = size.getColumns();
@@ -92,7 +110,8 @@ public class Entry {
                             Player recvPlayer = (Player) frame.getFrameData();
                             if (game.containsPlayer(recvPlayer.getIdentifier())) {
                                 game.updatePlayer(recvPlayer);
-                                System.out.println(recvPlayer.getIdentifier() + "-> " + recvPlayer.getX() + ", " + recvPlayer.getY() + ", " + recvPlayer.getFacing());
+                                System.out.println(recvPlayer.getIdentifier() + "-> " + recvPlayer.getX() + ", "
+                                        + recvPlayer.getY() + ", " + recvPlayer.getFacing());
                             } else {
                                 System.out.println("New player: " + recvPlayer.getIdentifier());
                                 game.addPlayer(recvPlayer);
@@ -165,12 +184,13 @@ public class Entry {
 
             double xDrawPos = 0;
 
-            int currentTextMapX = 0;
-            int currentTextMapY = 0;
-
-            // Unused: was potentially used for proper lighting, texturing
-            // int textMapX = 0;
-            // int textMapY = 0;
+            for (int x = 0; x < screenWidth; x++) {
+                for (int y = 0; y < screenHeight / 2; y++) {
+                    terminal.setCursorPosition(x, y);
+                    terminal.setForegroundColor(new TextColor.RGB(50, 50, 50));
+                    terminal.putCharacter('█');
+                }
+            }
 
             while (rayAngle < playerAngle + FOV / 2.0) {
                 double horizontalRayAngle = rayAngle;
@@ -291,46 +311,66 @@ public class Entry {
                 }
 
                 double rayLength = 0.0;
+                double wallHitLocation = 0.0;
 
                 if (horizontalRayLength < verticalRayLength) {
                     rayLength = horizontalRayLength;
-                    currentTextMapX = (int) horizontalMapX;
-                    currentTextMapY = (int) horizontalMapY;
-
-                    if ((currentTextMapX + currentTextMapY) % 2 == 0) {
-                        terminal.setForegroundColor(new TextColor.RGB(255, 0, 0));
-                    } else {
-                        terminal.setForegroundColor(new TextColor.RGB(230, 0, 0));
-                    }
-
+                    wallHitLocation = horizontalMapY - Math.floor(horizontalMapY);
                 } else {
                     rayLength = verticalRayLength;
-                    currentTextMapX = (int) verticalMapX;
-                    currentTextMapY = (int) verticalMapY;
-
-                    if ((currentTextMapX + currentTextMapY) % 2 == 0) {
-                        terminal.setForegroundColor(new TextColor.RGB(205, 0, 0));
-                    } else {
-                        terminal.setForegroundColor(new TextColor.RGB(180, 0, 0));
-                    }
+                    wallHitLocation = verticalMapX - Math.floor(verticalMapX);
                 }
 
-                double correctRay = rayLength * Math.cos(rayAngle - playerAngle);
+                int textureX = (int) (wallHitLocation * textureSize);
 
-                double rayHeight = screenHeight / correctRay;
+                double correctedRay = rayLength * Math.cos(rayAngle - playerAngle);
+                double rayHeight = screenHeight / correctedRay;
                 double windowOffset = (screenHeight - rayHeight) / 2.0;
 
                 int column = (int) xDrawPos;
                 int startRow = (int) windowOffset;
                 int endRow = (int) (screenHeight - windowOffset);
-
                 startRow = Math.max(0, startRow);
                 endRow = Math.min(screenHeight - 1, endRow);
 
+                double textureDrawStep = textureSize / rayHeight;
+                double textureDrawPos = (startRow - screenHeight / 2.0 + rayHeight / 2.0) * textureDrawStep;
+
                 for (int row = startRow; row <= endRow; row++) {
+                    int textureY = (int) textureDrawPos & (textureSize - 1);
+
+                    if (horizontalRayLength < verticalRayLength) {
+                        terminal.setForegroundColor(nsTexture[textureSize * textureY + textureX]);
+
+                    } else {
+                        terminal.setForegroundColor(ewTexture[textureSize * textureY + textureX]);
+                    }
+
+                    // No texturing
+                    // if (horizontalRayLength < verticalRayLength) {
+                    // if ((horizontalMapX + horizontalMapY) % 2 == 0) {
+                    // terminal.setForegroundColor(new TextColor.RGB(255, 0, 0));
+                    // } else {
+                    // terminal.setForegroundColor(new TextColor.RGB(230, 0, 0));
+                    // }
+                    // } else {
+                    // if ((verticalMapX + verticalMapY) % 2 == 0) {
+                    // terminal.setForegroundColor(new TextColor.RGB(205, 0, 0));
+                    // } else {
+                    // terminal.setForegroundColor(new TextColor.RGB(180, 0, 0));
+                    // }
+                    // }
+
                     terminal.setCursorPosition(column, row);
                     terminal.putCharacter('█');
+
+                    textureDrawPos += textureDrawStep;
                 }
+
+                // for (int row = startRow; row <= endRow; row++) {
+                // terminal.setCursorPosition(column, row);
+                // terminal.putCharacter('█');
+                // }
 
                 xDrawPos += 1.0;
                 rayAngle += angleIncrement;

@@ -91,7 +91,7 @@ public class Server extends WebSocketServer {
             case FrameDataFactory.PLAYER_FRAME:
                 Player player = (Player) frame.getFrameData();
                 game.updatePlayer(player);
-                System.out.println(player.getIdentifier() + "-> " + player.getX() + ", " + player.getY() + ", " + player.getFacing());
+                System.out.println(player.getIdentifier() + " -> " + player.getX() + ", " + player.getY() + ", " + player.getFacing());
 
                 selectiveBroadcast(con, FrameFactory.createPlayerFrame(player));
                 return;
