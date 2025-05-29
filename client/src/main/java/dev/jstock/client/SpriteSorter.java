@@ -2,6 +2,8 @@ package dev.jstock.client;
 
 import java.util.*;
 
+
+// Sorter class to sort out sprites based on their distance from the players camera
 public class SpriteSorter {
 
     static class SpritePair implements Comparable<SpritePair> {

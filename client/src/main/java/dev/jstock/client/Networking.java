@@ -9,6 +9,11 @@ import org.java_websocket.handshake.ServerHandshake;
 
 import dev.jstock.commons.Frame;
 
+// Networking class
+// This implements the raw networking layer for the client
+// It includes starting a connection in a non blocking manner, and then decoding any received byte messages into frames and pushing them into a concurrent queue
+// This concurrent queue is then read on the main game loop, processing frames when they are present
+
 public class Networking extends WebSocketClient {
 
     private ConcurrentLinkedQueue<Frame> frameQueue = new ConcurrentLinkedQueue<>();

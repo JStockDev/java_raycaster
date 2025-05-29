@@ -10,19 +10,23 @@ public class Entry {
 
     public static void main(String[] args) throws Exception {
 
+        // Load config file, parse it
         String rawFile = Files.readString(Path.of("./server_config.toml"));
         Config config = new Toml().read(rawFile).to(Config.class);
 
+        // Store the map in a static variable, to be accessed by the GameSingleton
         MAP = config.getMap();
 
+        // Ensure the map is square
         int mapWidth = MAP.length;
-
         for (int i = 0; i < mapWidth; i++) {
             if (MAP[i].length != mapWidth) {
                 throw new IllegalArgumentException("Map must be square, but row " + i + " has length " + MAP[i].length);
             }
         }
 
+        // Ensure the map has exactly one player spawn point and at least one objective
+        // spawn point
         int playerSpawnCount = 0;
         int objectiveSpawnCount = 0;
 
@@ -45,6 +49,7 @@ public class Entry {
                     "Map must have at least one objective spawn point, but found " + objectiveSpawnCount);
         }
 
+        // Start the server
         Server server = new Server(config.getPort());
         server.start();
     }

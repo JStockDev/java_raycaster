@@ -1,5 +1,7 @@
 package dev.jstock.server;
 
+// Simple config file to hold server settings
+
 public class Config {
     private int port;
     private byte[][] map;

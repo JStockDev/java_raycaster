@@ -1,5 +1,7 @@
 package dev.jstock.client;
 
+// Basic config class for the TOML config file
+
 public class Config {
     private String serverAddress;
 

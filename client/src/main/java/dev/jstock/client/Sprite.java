@@ -2,6 +2,8 @@ package dev.jstock.client;
 
 import com.googlecode.lanterna.TextColor;
 
+// Simple sprite class, mainly implemented to keep sorting simple
+
 public class Sprite {
     private Double x;
     private Double y;

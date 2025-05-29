@@ -23,6 +23,8 @@ public class Server extends WebSocketServer {
         super(new java.net.InetSocketAddress(port));
     }
 
+
+    // Store connections with their associated player UUIDs
     HashMap<WebSocket, UUID> connections = new HashMap<>();
 
     @Override
@@ -39,6 +41,7 @@ public class Server extends WebSocketServer {
     public void onClose(WebSocket con, int code, String reason, boolean remote) {
         System.out.println("Client closed: " + con.getRemoteSocketAddress());
 
+        // Remove the player from the game if they were connected, and notify all other clients about which client left
         synchronized (connections) {
             UUID player = connections.get(con);
             if (player != null) {
@@ -54,11 +57,17 @@ public class Server extends WebSocketServer {
         }
     }
 
+
+    // Handle incoming byte messages
     @Override
     public void onMessage(WebSocket con, ByteBuffer blob) {
+
+        // Decode the frame and get a *synchronised* game instance to ensure thread safety
         Frame frame = Frame.decodeBytes(blob.array());
         Game game = GameSingleton.getInstance();
 
+
+        // Process the frame data by its respective frame type
         switch (frame.getType()) {
             case FrameDataFactory.JOIN_FRAME:
                 JoinFrame joinFrame = (JoinFrame) frame.getFrameData();
@@ -69,10 +78,12 @@ public class Server extends WebSocketServer {
                     return;
                 }
 
+
                 synchronized (connections) {
                     connections.put(con, joinFrame.getClientUUID());
                 }
-
+                
+                // Add the player into the game, set its starting position, broadcast the current game state to the new player, nd notify other clients about the new player
                 Player newPlayer = new Player(joinFrame.getClientUUID(), game.getStartingX(), game.getStartingY(), 0.0);
                 game.addPlayer(newPlayer);
 
@@ -81,22 +92,27 @@ public class Server extends WebSocketServer {
 
                 return;
             case FrameDataFactory.LEAVE_FRAME:
+                // Remove the player from the game and notify other clients about the player leaving
+                // Note: The connection is only closed here, the rest of the leave logic is handled in onClose
                 LeaveFrame leaveFrame = (LeaveFrame) frame.getFrameData();
                 game.removePlayer(leaveFrame.getClientUUID());
                 con.close();
                 break;
-            case FrameDataFactory.GAME_FRAME:
-                // Should never receive game frame from client
-                break;
             case FrameDataFactory.PLAYER_FRAME:
+                // Retrieve the players new position
                 Player player = (Player) frame.getFrameData();
                 game.updatePlayer(player);
+
+                // Log the players new location
                 System.out.println(player.getIdentifier() + " -> " + player.getX() + ", " + player.getY() + ", "
                         + player.getFacing());
 
+                // Broadcast the updated player position to all other clients
                 selectiveBroadcast(con, FrameFactory.createPlayerFrame(player));
                 return;
             case FrameDataFactory.OBJECTIVE_FRAME:
+
+                // Process the game win, and broadcast the winning player to all clients
                 ObjectiveFrame objectiveFrame = (ObjectiveFrame) frame.getFrameData();
                 System.out.println("Player " + objectiveFrame.getClientUUID() + " wins!");
                 selectiveBroadcast(con, FrameFactory.createObjectiveFrame(objectiveFrame.getClientUUID()));
