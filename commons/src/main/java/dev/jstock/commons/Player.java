@@ -3,6 +3,10 @@ package dev.jstock.commons;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
+
+// Main player class, which holds their identifier, and current position
+// Also acts as a data frame (FrameData), so players can be quickly encoded and decoded for networking
+
 public class Player extends FrameData {
     private UUID identifier;
     private Double x;

@@ -3,6 +3,7 @@ package dev.jstock.commons;
 import java.util.ArrayList;
 import java.util.UUID;
 
+// Main game class, which is responsible for managing players and holding the current map
 public class Game {
     private ArrayList<Player> players;
     private byte[][] map;
@@ -40,6 +41,7 @@ public class Game {
     public double getStartingX() {
         double startingX = 0.5;
 
+        // Find the first occurrence of the starting point (2) in the map, as defined in the map legend in the config file
         for (int i = 0; i < map.length; i++) {
             for (int j = 0; j < map[i].length; j++) {
                 if (map[i][j] == 2) {
@@ -70,6 +72,7 @@ public class Game {
     public double getObjectiveX() {
         double objectiveX = 0.5;
 
+        // Find the first occurrence of the objective point (3) in the map, as defined in the map legend in the config file
         for (int i = 0; i < map.length; i++) {
             for (int j = 0; j < map[i].length; j++) {
                 if (map[i][j] == 3) {

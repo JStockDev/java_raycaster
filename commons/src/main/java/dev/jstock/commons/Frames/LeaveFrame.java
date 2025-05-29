@@ -6,6 +6,7 @@ import java.util.UUID;
 import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 
+// Player leave frame, sent and broadcasted when a player leaves the game
 public class LeaveFrame extends FrameData {
      private UUID clientUUID;
 

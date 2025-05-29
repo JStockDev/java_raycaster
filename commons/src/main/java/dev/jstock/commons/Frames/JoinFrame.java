@@ -6,6 +6,7 @@ import java.util.UUID;
 import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 
+// Player join frame, sent and broadcasted when a player joins the game
 public class JoinFrame extends FrameData {
     private UUID clientUUID;
 

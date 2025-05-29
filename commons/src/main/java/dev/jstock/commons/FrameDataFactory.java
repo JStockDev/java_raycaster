@@ -8,7 +8,9 @@ import dev.jstock.commons.Frames.JoinFrame;
 import dev.jstock.commons.Frames.LeaveFrame;
 import dev.jstock.commons.Frames.ObjectiveFrame;
 
+// The main factory for holding the frame types, and for decoding the different frame data types.
 public class FrameDataFactory {
+    // Frame types, identifying the frame type, at position [0]
     public static final byte JOIN_FRAME = 0;
     public static final byte LEAVE_FRAME = 1;
     public static final byte GAME_FRAME = 2;
@@ -17,6 +19,7 @@ public class FrameDataFactory {
     public static final byte ERROR_FRAME = 5;
 
     public static FrameData decodeFrameData(int frameType, byte[] data) {
+        // Depending on the frame type, decode the data accordingly
         switch (frameType) {
             case JOIN_FRAME:
                 if (data.length != 16) {
@@ -75,6 +78,7 @@ public class FrameDataFactory {
                 }
 
                 // Casting is okay since it *should* always be a square map
+                // Needs to always be a square due to map size encoding
                 int mapLength = (int) Math.sqrt((double) mapSize);
 
                 byte[][] map = new byte[mapLength][mapLength];

@@ -9,6 +9,8 @@ import dev.jstock.commons.FrameDataFactory;
 import dev.jstock.commons.Game;
 import dev.jstock.commons.Player;
 
+
+// Class used for encoding the game state
 public class GameFrame extends FrameData {
 
     private Player[] players;
@@ -34,6 +36,8 @@ public class GameFrame extends FrameData {
 
         int mapSize = 0;
         int playerBytesLength = players.length * 40;
+
+        // In decoding, there would be no way to know the different array lengths of the map, so a square map has to be used.
         for (byte[] row : map) {
             mapSize += row.length;
         }

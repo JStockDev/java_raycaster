@@ -6,6 +6,8 @@ import java.util.UUID;
 import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 
+
+// Objective frame, broadcasted when a player wins a game
 public class ObjectiveFrame extends FrameData {
     private UUID clientUUID;
 

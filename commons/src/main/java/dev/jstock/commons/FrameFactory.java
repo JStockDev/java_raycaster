@@ -7,6 +7,7 @@ import dev.jstock.commons.Frames.JoinFrame;
 import dev.jstock.commons.Frames.LeaveFrame;
 import dev.jstock.commons.Frames.ObjectiveFrame;
 
+// Small factory class for quickly creating frames for different purposes
 public class FrameFactory {
     public static Frame createJoinFrame(UUID userId) {
         JoinFrame joinFrame = new JoinFrame(userId);
