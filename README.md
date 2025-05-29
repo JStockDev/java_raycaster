@@ -33,6 +33,10 @@ gradle :server:run
 gradle :client:run
 ```
 
+## Configuration
+
+The server and clients can be configured through their respective `server_config.toml` and `client_config.toml` files in the root project directory. Both config files allow port changing, the server allows for a custom map to be implemented, and the client allows for a custom server address to be set.
+
 ## Requirements
 
 ### Game World:
