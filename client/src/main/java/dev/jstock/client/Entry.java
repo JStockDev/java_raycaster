@@ -12,12 +12,14 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 
 import dev.jstock.commons.Frame;
+import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 import dev.jstock.commons.FrameFactory;
 import dev.jstock.commons.Game;
 import dev.jstock.commons.Player;
 import dev.jstock.commons.Frames.GameFrame;
 import dev.jstock.commons.Frames.LeaveFrame;
+import dev.jstock.commons.Frames.ObjectiveFrame;
 
 public class Entry {
 
@@ -124,6 +126,11 @@ public class Entry {
                             System.out.println("Player left: " + leavePlayerUUID);
                             break;
 
+                        case FrameDataFactory.OBJECTIVE_FRAME:
+                            UUID objectiveUUID = ((ObjectiveFrame) frame.getFrameData()).getClientUUID();
+                            System.out.println("Player " + objectiveUUID + " wins the game!");
+
+                            System.exit(0);
                         default:
                             break;
                     }
@@ -149,6 +156,19 @@ public class Entry {
                                     player.setX(posXOffset);
                                     player.setY(posYOffset);
                                     networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+
+                                    int playerMapSquareX = (int) player.getX();
+                                    int playerMapSquareY = (int) player.getY();
+
+                                    int objectiveSquareX = (int) (game.getObjectiveX() - 0.5);
+                                    int objectiveSquareY = (int) (game.getObjectiveY() - 0.5);
+
+                                    if (playerMapSquareX == objectiveSquareX &&
+                                            playerMapSquareY == objectiveSquareY) {
+                                        networking.send(FrameFactory.createObjectiveFrame(player.getIdentifier())
+                                                .encodeFrame());
+                                        System.out.println("You win!");
+                                    }
                                 }
 
                                 break;
@@ -165,6 +185,19 @@ public class Entry {
                                     player.setX(negativeXOffset);
                                     player.setY(negativeYOffset);
                                     networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
+
+                                    int playerMapSquareX = (int) player.getX();
+                                    int playerMapSquareY = (int) player.getY();
+
+                                    int objectiveSquareX = (int) (game.getObjectiveX() - 0.5);
+                                    int objectiveSquareY = (int) (game.getObjectiveY() - 0.5);
+
+                                    if (playerMapSquareX == objectiveSquareX &&
+                                            playerMapSquareY == objectiveSquareY) {
+                                        networking.send(FrameFactory.createObjectiveFrame(player.getIdentifier())
+                                                .encodeFrame());
+                                        System.out.println("You win!");
+                                    }
                                 }
 
                                 break;
@@ -178,13 +211,13 @@ public class Entry {
                                 player.setFacing(player.getFacing() + ROTATE_AMOUNT);
                                 networking.send(FrameFactory.createPlayerFrame(player).encodeFrame());
                                 break;
-
                             default:
                                 break;
                         }
 
                         break;
                     case Escape:
+                        System.exit(0);
                         break main_loop;
                     default:
                         break;

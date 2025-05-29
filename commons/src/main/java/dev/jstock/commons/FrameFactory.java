@@ -5,6 +5,7 @@ import java.util.UUID;
 import dev.jstock.commons.Frames.GameFrame;
 import dev.jstock.commons.Frames.JoinFrame;
 import dev.jstock.commons.Frames.LeaveFrame;
+import dev.jstock.commons.Frames.ObjectiveFrame;
 
 public class FrameFactory {
     public static Frame createJoinFrame(UUID userId) {
@@ -26,5 +27,9 @@ public class FrameFactory {
         return new Frame(gameFrame.getFrameIdentifier(), gameFrame);
     }
 
+    public static Frame createObjectiveFrame(UUID userId) {
+        ObjectiveFrame objectiveFrame = new ObjectiveFrame(userId);
+        return new Frame(objectiveFrame.getFrameIdentifier(), objectiveFrame);
+    }
     
 }

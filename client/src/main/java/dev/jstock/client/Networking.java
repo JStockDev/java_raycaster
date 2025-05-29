@@ -29,11 +29,14 @@ public class Networking extends WebSocketClient {
         } else {
             System.out.println("Local disconnection.");
         }
+
+        System.exit(0);
     }
 
     @Override
     public void onError(Exception ex) {
         System.err.println("Error occurred: " + ex.getMessage());
+        System.exit(0);
     }
 
     @Override

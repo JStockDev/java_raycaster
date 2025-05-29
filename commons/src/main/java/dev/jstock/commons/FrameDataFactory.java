@@ -6,6 +6,7 @@ import java.util.UUID;
 import dev.jstock.commons.Frames.GameFrame;
 import dev.jstock.commons.Frames.JoinFrame;
 import dev.jstock.commons.Frames.LeaveFrame;
+import dev.jstock.commons.Frames.ObjectiveFrame;
 
 public class FrameDataFactory {
     public static final byte JOIN_FRAME = 0;
@@ -96,6 +97,19 @@ public class FrameDataFactory {
                 }
 
                 return new GameFrame(players, map);
+
+            case OBJECTIVE_FRAME:
+                if (data.length != 16) {
+                    throw new IndexOutOfBoundsException(
+                            "Data array is not the correct size to decode player location");
+                }
+                
+                ByteBuffer rawObjectiveUUID = ByteBuffer.wrap(data);
+                long objectiveMSB = rawObjectiveUUID.getLong();
+                long objectiveLSB = rawObjectiveUUID.getLong();
+                UUID objectiveUUID = new UUID(objectiveMSB, objectiveLSB);
+
+                return new ObjectiveFrame(objectiveUUID);
             default:
                 throw new IllegalArgumentException("Invalid frame type");
         }

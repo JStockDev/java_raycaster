@@ -15,6 +15,7 @@ import dev.jstock.commons.Game;
 import dev.jstock.commons.Player;
 import dev.jstock.commons.Frames.JoinFrame;
 import dev.jstock.commons.Frames.LeaveFrame;
+import dev.jstock.commons.Frames.ObjectiveFrame;
 
 public class Server extends WebSocketServer {
 
@@ -96,6 +97,14 @@ public class Server extends WebSocketServer {
                 selectiveBroadcast(con, FrameFactory.createPlayerFrame(player));
                 return;
             case FrameDataFactory.OBJECTIVE_FRAME:
+                ObjectiveFrame objectiveFrame = (ObjectiveFrame) frame.getFrameData();
+                System.out.println("Player " + objectiveFrame.getClientUUID() + " wins!");
+                selectiveBroadcast(con, FrameFactory.createObjectiveFrame(objectiveFrame.getClientUUID()));
+                
+                this.getConnections().forEach(connection -> {
+                    connection.close();
+                });
+                
                 return;
             case FrameDataFactory.ERROR_FRAME:
                 return;
