@@ -14,6 +14,7 @@ dependencies {
     implementation(project(":commons"))
     implementation("com.googlecode.lanterna:lanterna:3.2.0-alpha1")
     implementation("org.java-websocket:Java-WebSocket:1.6.0")
+    implementation("com.moandjiezana.toml:toml4j:0.7.2")
 }
 
 java {
@@ -24,6 +25,8 @@ java {
 
 application {
     mainClass = "dev.jstock.client.Entry"
+
+    tasks.run.get().workingDir = rootProject.projectDir
 }
 
 tasks.jar {

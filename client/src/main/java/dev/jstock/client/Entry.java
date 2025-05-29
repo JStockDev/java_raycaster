@@ -2,6 +2,8 @@ package dev.jstock.client;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -10,9 +12,9 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+import com.moandjiezana.toml.Toml;
 
 import dev.jstock.commons.Frame;
-import dev.jstock.commons.FrameData;
 import dev.jstock.commons.FrameDataFactory;
 import dev.jstock.commons.FrameFactory;
 import dev.jstock.commons.Game;
@@ -36,11 +38,11 @@ public class Entry {
     }
 
     public static void terminalRayCaster() throws Exception {
-        DefaultTerminalFactory factory = new DefaultTerminalFactory();
-        Terminal terminal = factory.createTerminal();
+        String rawFile = Files.readString(Path.of("./client_config.toml"));
+        Config config = new Toml().read(rawFile).to(Config.class);
 
         ConcurrentLinkedQueue<Frame> frameQueue = new ConcurrentLinkedQueue<>();
-        Networking networking = new Networking(new URI("ws://localhost:45777"), frameQueue);
+        Networking networking = new Networking(new URI(config.getServerAddress()), frameQueue);
 
         if (networking.connectBlocking()) {
             System.out.println("Connected to server: " + networking.getURI());
@@ -96,6 +98,9 @@ public class Entry {
                 ewTexture[textureSize * y + x] = new TextColor.RGB(colour, 0, 0);
             }
         }
+
+        DefaultTerminalFactory factory = new DefaultTerminalFactory();
+        Terminal terminal = factory.createTerminal();
 
         main_loop: while (true) {
             TerminalSize size = terminal.getTerminalSize();
