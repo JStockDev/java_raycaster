@@ -3,8 +3,8 @@
 Module Code: CS1OP  
 Assignment Report Title: Project  
 Student Number: 33015092  
-Actual Hrs:    
-Which artificial intelligence techniques are used in your project?:
+Actual Hrs: 15hrs
+Which artificial intelligence techniques are used in your project?: ChatGPT
 
 ## Introduction
 
